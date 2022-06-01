@@ -11,6 +11,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
@@ -34,47 +36,20 @@ public class TableUtils {
     private final StreamExecutionEnvironment blinkStreamEnv;
     @Getter
     private final TableEnvironment blinkTableEnv;
+    @Getter
+    private final StatementSet statementSet;
     private final ParameterTool parameterTool;
     private final Splitter splitter = new Splitter(';');
     private String annotationSymbol = "--";
     private Integer sqlLineCount = 2000;
-
-    public TableUtils(TableEnvironment blinkTableEnv, ParameterTool parameterTool) {
-        this.blinkStreamEnv = null;
-        this.blinkTableEnv = blinkTableEnv;
-        this.parameterTool = parameterTool;
-    }
-
-    public TableUtils(TableEnvironment blinkTableEnv, ParameterTool parameterTool, String annotationSymbol) {
-        this.blinkStreamEnv = null;
-        this.blinkTableEnv = blinkTableEnv;
-        this.parameterTool = parameterTool;
-        this.annotationSymbol = annotationSymbol;
-    }
-
-    public TableUtils(StreamExecutionEnvironment blinkStreamEnv, ParameterTool parameterTool) {
-        this.blinkStreamEnv = blinkStreamEnv;
-        TableConfig tableConfig = TableConfig.getDefault();
-        tableConfig.addConfiguration(parameterTool.getConfiguration());
-        this.blinkTableEnv = StreamTableEnvironment.create(blinkStreamEnv, tableConfig);
-        this.parameterTool = parameterTool;
-    }
-
-    public TableUtils(StreamExecutionEnvironment blinkStreamEnv, ParameterTool parameterTool, Integer sqlLineCount) {
-        this.blinkStreamEnv = blinkStreamEnv;
-        TableConfig tableConfig = TableConfig.getDefault();
-        tableConfig.addConfiguration(parameterTool.getConfiguration());
-        this.blinkTableEnv = StreamTableEnvironment.create(blinkStreamEnv, tableConfig);
-        this.parameterTool = parameterTool;
-        this.sqlLineCount = sqlLineCount;
-    }
 
     public TableUtils(ParameterTool parameterTool) {
         this.parameterTool = parameterTool;
         this.blinkStreamEnv = StreamExecutionEnvironment.getExecutionEnvironment(parameterTool.getConfiguration());
         TableConfig tableConfig = TableConfig.getDefault();
         tableConfig.addConfiguration(parameterTool.getConfiguration());
-        this.blinkTableEnv = StreamTableEnvironment.create(blinkStreamEnv, tableConfig);
+        this.blinkTableEnv = StreamTableEnvironment.create(blinkStreamEnv, EnvironmentSettings.newInstance().withConfiguration(tableConfig.getConfiguration()).build());
+        this.statementSet = this.blinkTableEnv.createStatementSet();
     }
 
 
@@ -147,12 +122,6 @@ public class TableUtils {
         return splitter.splitEscaped(sqlStr);
     }
 
-    public void executeSqlFile(TableEnvironment blinkTableEnv, ParameterTool parameterTool, String path) throws Exception {
-        List<String> sqlList = getSqlListFromFile(path, parameterTool.toMap());
-        log.info("\n{}的内容:\n{}\n", path, sqlList);
-        sqlList.forEach(blinkTableEnv::sqlUpdate);
-    }
-
     public void executeSqlFile(String path) throws Exception {
         this.executeSqlFile(path, Collections.emptyMap());
     }
@@ -192,7 +161,7 @@ public class TableUtils {
                 {
                     if (StrUtil.isNotBlank(sql)) {
                         log.info("\n执行{}中的sql:\n{}\n", path, sql);
-                        this.blinkTableEnv.sqlUpdate(sql);
+                        this.statementSet.addInsertSql(sql);
 //                        this.blinkTableEnv.executeSql(sql);
                     }
                 });
@@ -210,7 +179,7 @@ public class TableUtils {
                 {
                     if (CharSequenceUtil.isNotBlank(sql)) {
                         log.info("\n执行sql:\n{}\n", sql);
-                        this.blinkTableEnv.sqlUpdate(sql);
+                        this.statementSet.addInsertSql(sql);
 //                        this.blinkTableEnv.executeSql(sql);
                     }
                 });
@@ -221,9 +190,6 @@ public class TableUtils {
 
     }
 
-    public void executeSqlFile(TableEnvironment blinkTableEnv, ParameterTool parameterTool, String dir, String fileName) throws Exception {
-        this.executeSqlFile(blinkTableEnv, parameterTool, this.combinePath(dir, fileName));
-    }
 
     public List<String> getSqlListFromFile(String dir, String fileName) throws Exception {
         return this.getSqlListFromFile(this.combinePath(dir, fileName));
@@ -242,7 +208,8 @@ public class TableUtils {
     }
 
     public void executeSqlJob(String jobName) throws Exception {
-        this.blinkTableEnv.execute(this.parameterTool.get(PropertiesConstants.JOB_NAME, jobName));
+//        this.blinkTableEnv.execute(this.parameterTool.get(PropertiesConstants.JOB_NAME, jobName));
+        this.statementSet.execute();
     }
 
     public void executeStreamJob() throws Exception {

@@ -40,6 +40,7 @@ public class PropertiesConstants {
 
     //mysql
     public static final String MYSQL_DATABASE = "mysql.database";
+    public static final String MYSQL_TABLE = "mysql.table";
     public static final String MYSQL_HOST = "mysql.host";
     public static final String MYSQL_PASSWORD = "mysql.password";
     public static final String MYSQL_PORT = "mysql.port";

@@ -10,6 +10,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>bigdata-common</module>
+        <module>bigdata-flink-learning</module>
     </modules>
 
     <properties>
@@ -18,8 +19,9 @@
         <lombok.version>1.18.22</lombok.version>
         <hadoop.version>3.0.0</hadoop.version>
         <hutool.version>5.7.18</hutool.version>
-        <flink.version>1.14.3</flink.version>
+        <flink.version>1.15.0</flink.version>
         <scala.binary.version>2.11</scala.binary.version>
+        <flink.shaded.hadoop.version>3.0.0-cdh6.2.1</flink.shaded.hadoop.version>
     </properties>
 
     <dependencyManagement>
@@ -36,12 +38,12 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
+                <artifactId>flink-streaming-java</artifactId>
                 <version>${flink.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-table-api-java-bridge_${scala.binary.version}</artifactId>
+                <artifactId>flink-table-api-java-bridge</artifactId>
                 <version>${flink.version}</version>
             </dependency>
             <dependency>
