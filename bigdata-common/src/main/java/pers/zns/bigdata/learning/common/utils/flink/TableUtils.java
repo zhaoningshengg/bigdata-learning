@@ -38,24 +38,47 @@ public class TableUtils {
     private final TableEnvironment blinkTableEnv;
     @Getter
     private final StatementSet statementSet;
-    private final ParameterTool parameterTool;
-    private final Splitter splitter = new Splitter(';');
-    private String annotationSymbol = "--";
-    private Integer sqlLineCount = 2000;
 
-    public TableUtils(ParameterTool parameterTool) {
+    private final ParameterTool parameterTool;
+    @Getter
+    private final Class<?> mainClass;
+    private final Splitter splitter;
+    private final String annotationSymbol;
+
+    private static final char DEFAULT_DELIMITER = ';';
+    private static final String DEFAULT_ANNOTATION_SYMBOL = "--";
+
+    public TableUtils(ParameterTool parameterTool, Class<?> mainClass, char delimiter, String annotationSymbol) {
         this.parameterTool = parameterTool;
+        this.mainClass = mainClass;
         this.blinkStreamEnv = StreamExecutionEnvironment.getExecutionEnvironment(parameterTool.getConfiguration());
         TableConfig tableConfig = TableConfig.getDefault();
         tableConfig.addConfiguration(parameterTool.getConfiguration());
         this.blinkTableEnv = StreamTableEnvironment.create(blinkStreamEnv, EnvironmentSettings.newInstance().withConfiguration(tableConfig.getConfiguration()).build());
         this.statementSet = this.blinkTableEnv.createStatementSet();
+        this.splitter = new Splitter(delimiter);
+        this.annotationSymbol = annotationSymbol;
     }
 
+    public TableUtils(ParameterTool parameterTool, Class<?> mainClass, char delimiter) {
+        this(parameterTool, mainClass, delimiter, DEFAULT_ANNOTATION_SYMBOL);
+    }
+
+    public TableUtils(ParameterTool parameterTool, Class<?> mainClass, String annotationSymbol) {
+        this(parameterTool, mainClass, DEFAULT_DELIMITER, annotationSymbol);
+    }
+
+    public TableUtils(ParameterTool parameterTool, Class<?> mainClass) {
+        this(parameterTool, mainClass, DEFAULT_DELIMITER, DEFAULT_ANNOTATION_SYMBOL);
+    }
+
+    public TableUtils(ParameterTool parameterTool) {
+        this(parameterTool, File2StreamUtil.deduceMainApplicationClass());
+    }
 
     public String getSqlFromFile(String path) throws Exception {
         String sqlStrings = IOUtils.toString(
-                Objects.requireNonNull(File2StreamUtil.getStream(path)),
+                Objects.requireNonNull(File2StreamUtil.getStream(path, this.mainClass)),
                 StandardCharsets.UTF_8);
         return
                 CharSequenceUtil.trim(

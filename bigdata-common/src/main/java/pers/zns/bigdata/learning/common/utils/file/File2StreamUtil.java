@@ -35,15 +35,20 @@ public class File2StreamUtil {
     }
 
     public static InputStream getStream(String path) throws IOException {
+        return getStream(path, null);
+    }
+
+    public static InputStream getStream(String path, Class<?> mainClass) throws IOException {
         Assert.notBlank(path, "Path must not be null");
         if (CharSequenceUtil.startWith(path, LOCAL_FILE_PREFIX) || CharSequenceUtil.startWith(path, HDFS_FILE_PREFIX)) {
             return new URL(path).openStream();
+        } else if (mainClass != null) {
+            return mainClass.getResourceAsStream(path);
         } else {
             Class<?> aClass = deduceMainApplicationClass();
             assert aClass != null;
             return aClass.getResourceAsStream(path);
         }
-
     }
 
     public static Class<?> deduceMainApplicationClass() {
