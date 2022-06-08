@@ -1,7 +1,8 @@
 package pers.zns.bigdata.learning.csv;
 
 import cn.hutool.core.map.MapUtil;
-import org.apache.flink.api.common.RuntimeExecutionMode;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.RandomUtil;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -31,21 +32,21 @@ import static pers.zns.bigdata.learning.common.utils.constant.PropertiesConstant
  * @author: zns
  * @create: 2022-05-31 17:33
  */
-public class Csv2Mysql304StaticTxt {
+public class Csv2Doris304StaticTxt {
     static final Map<String, String> APP_PROPS = MapUtil.builder(new HashMap<String, String>())
-            .put("execution.runtime-mode","BATCH")
-            .put("parallelism.default","1")
+            .put("execution.runtime-mode", "BATCH")
+            .put("parallelism.default", "1")
             .put("pipeline.name", "Csv2MysqlStaticTxt")
-            .put(MYSQL_HOST, "192.168.30.102")
-            .put(MYSQL_PORT, "3306")
-            .put(MYSQL_DATABASE, "test")
-            .put(MYSQL_TABLE, "static_03")
+            .put(MYSQL_HOST, "192.168.20.100")
+            .put(MYSQL_PORT, "9030")
+            .put(MYSQL_DATABASE, "test_304")
+            .put(MYSQL_TABLE, "static_01")
 //            .put(MYSQL_TABLE, "static_01")
             .put(MYSQL_USERNAME, "root")
             .put(MYSQL_PASSWORD, "hitocas")
 //            .put("sourceFilePath", "/Users/zns/hito/304/0527错误/3/static-test1.txt")
-            .put("sourceFilePath", "/Users/zns/hito/304/0527错误/3/static_2018-05-01_2018-05-05_20220527142340392.txt.retypec")
-//            .put("sourceFilePath", "/Users/zns/hito/304/0527错误/3/static_2018-05-01_2018-05-05_20220527142134033.txt.retypec")
+//            .put("sourceFilePath", "/Users/zns/hito/304/0527错误/3/static_2018-05-01_2018-05-05_20220527142340392.txt.retypec")
+            .put("sourceFilePath", "/Users/zns/hito/304/0527错误/3/static_2018-05-01_2018-05-05_20220527142134033.txt.retypec")
             .build();
 
     public static void main(String[] args) throws Exception {
@@ -77,7 +78,7 @@ public class Csv2Mysql304StaticTxt {
                                 "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                         ,
                         (statement, model) -> {
-                            statement.setInt(1, 0);
+                            statement.setString(1, IdUtil.simpleUUID());
                             statement.setString(2, model.getMmsi());
                             statement.setString(3, model.getImo());
                             statement.setString(4, model.getCallSign());
@@ -107,13 +108,14 @@ public class Csv2Mysql304StaticTxt {
                             statement.setString(28, model.getShipTypeEnLabel());
                         }
                         , JdbcExecutionOptions.builder()
+                                .withBatchSize(10000)
                                 .withMaxRetries(5)
                                 .build(),
                         new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                                 .withUrl("jdbc:mysql://" + parameterTool.getRequired(MYSQL_HOST) + ":" + parameterTool.getRequired(MYSQL_PORT) + "/" + parameterTool.getRequired(MYSQL_DATABASE))
                                 .withDriverName("com.mysql.cj.jdbc.Driver")
                                 .withUsername(parameterTool.getRequired(MYSQL_USERNAME))
-                                .withPassword(parameterTool.getRequired(MYSQL_PASSWORD))
+//                                .withPassword(parameterTool.getRequired(MYSQL_PASSWORD))
                                 .build())
         );
         blinkStreamEnv.execute();
